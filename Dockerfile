@@ -8,7 +8,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o service ./cmd/service
 
 FROM gcr.io/distroless/base-debian12
 WORKDIR /
-COPY --from=builder /app/service /service
+COPY --from=builder /app/service /service-order
 EXPOSE 8080
 USER nonroot:nonroot
-ENTRYPOINT ["/service"]
+ENTRYPOINT ["/service-order"]
