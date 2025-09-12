@@ -12,7 +12,7 @@ down:
 
 # Follow service logs
 logs:
-	docker compose logs -f service
+	docker compose logs -f service-order
 
 test:
 	go test -v ./... -race
