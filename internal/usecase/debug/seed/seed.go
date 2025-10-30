@@ -10,7 +10,6 @@ import (
 	"github.com/nikolaev/service-order/internal/domain/entity"
 )
 
-// Seed creates n orders for the user with meaningful fields and varied statuses/timestamps.
 func (s *service) Seed(ctx context.Context, userID string, n int) ([]*entity.Order, error) {
 	if n <= 0 {
 		n = 10
@@ -18,7 +17,7 @@ func (s *service) Seed(ctx context.Context, userID string, n int) ([]*entity.Ord
 	if userID == "" {
 		userID = "default-user"
 	}
-	now := s.clk.Now()
+
 	out := make([]*entity.Order, 0, n)
 	statuses := []entity.OrderStatus{
 		entity.OrderStatusCreated,
@@ -35,7 +34,7 @@ func (s *service) Seed(ctx context.Context, userID string, n int) ([]*entity.Ord
 
 	for i := 0; i < n; i++ {
 		st := statuses[i%len(statuses)]
-		createdAt := now.Add(minutes(-(15 - i)))
+		createdAt := time.Now()
 		updatedAt := createdAt
 		statusChangedAt := createdAt
 		estimated := createdAt.Add(minutes(30 + i))
@@ -66,7 +65,6 @@ func (s *service) Seed(ctx context.Context, userID string, n int) ([]*entity.Ord
 			Comment:   pick([]string{"Позвонить за 5 минут", "Код домофона 1234", "Оставить у двери"}, i),
 		}
 
-		// Adjust timestamps to be consistent for chosen status
 		switch st {
 		case entity.OrderStatusPending:
 			statusChangedAt = createdAt.Add(seconds(2))
@@ -112,12 +110,11 @@ func (s *service) Seed(ctx context.Context, userID string, n int) ([]*entity.Ord
 		}
 		out = append(out, o)
 	}
-	// slight random shuffle for realism
+
 	rand.Shuffle(len(out), func(i, j int) { out[i], out[j] = out[j], out[i] })
 	return out, nil
 }
 
-// Helpers without importing fmt to minimize deps
 func itoa(v int, salt int) string    { return fmtInt(v + salt) }
 func sprintf(_ string, v int) string { return fmtPadded(v) }
 
@@ -126,7 +123,6 @@ func pick[T any](arr []T, i int) T { return arr[i%len(arr)] }
 func seconds(s int) time.Duration { return time.Duration(s) * time.Second }
 func minutes(m int) time.Duration { return time.Duration(m) * time.Minute }
 
-// tiny integer formatting helpers
 func fmtInt(v int) string {
 	if v == 0 {
 		return "0"
@@ -149,7 +145,6 @@ func fmtInt(v int) string {
 }
 
 func fmtPadded(v int) string {
-	// 6-digit zero padded
 	s := fmtInt(v)
 	for len(s) < 6 {
 		s = "0" + s
