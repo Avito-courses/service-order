@@ -47,12 +47,23 @@ message GetOrdersRequest {
   google.protobuf.Timestamp from = 1; // Фильтрация заказов по дате
 }
 
+// Запрос на получение заказ по id
+message GetOrderByIdRequest {
+  string id = 1;
+}
+
 // Ответ на запрос получения заказов
 message GetOrdersResponse {
   repeated Order orders = 1;
 }
 
+// Ответ на запрос получения заказов
+message GetOrderByIdResponse {
+  Order order = 1;
+}
+
 // Интерфейс службы, возвращающей заказы
 service OrdersService {
   rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse);
+  rpc GetOrderById(GetOrderByIdRequest) returns (GetOrderByIdResponse);
 }

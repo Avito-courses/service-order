@@ -8,4 +8,5 @@ import (
 
 type usecase interface {
 	ListFrom(ctx context.Context, from time.Time) ([]*entity.Order, error)
+	GetByID(ctx context.Context, id string) (*entity.Order, error)
 }

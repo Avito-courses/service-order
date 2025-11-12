@@ -28,12 +28,24 @@ func (h *Handler) GetOrders(ctx context.Context, in *pb.GetOrdersRequest) (*pb.G
 
 	orders, err := h.useCase.ListFrom(ctx, from)
 	if err != nil {
-		log.Printf("from gRPC: %v", err)
+		log.Printf("from GetOrders gRPC: %v", err)
 		return nil, err
 	}
 
 	return &pb.GetOrdersResponse{
 		Orders: toOrderDtoResponse(orders),
+	}, nil
+}
+
+func (h *Handler) GetOrderById(ctx context.Context, in *pb.GetOrderByIdRequest) (*pb.GetOrderByIdResponse, error) {
+	order, err := h.useCase.GetByID(ctx, in.Id)
+	if err != nil {
+		log.Printf("from GetOrderById gRPC: %v", err)
+		return nil, err
+	}
+
+	return &pb.GetOrderByIdResponse{
+		Order: toOrderDtoResponse([]*entity.Order{order})[0],
 	}, nil
 }
 
