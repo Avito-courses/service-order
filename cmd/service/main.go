@@ -2,7 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
+	pb "github.com/nikolaev/service-order/internal/proto"
+	fetchOrders "github.com/nikolaev/service-order/internal/rpc/fetch_orders"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -32,8 +38,9 @@ func main() {
 	_ = c.Provide(provideSeeder)
 	_ = c.Provide(provideOrderHandler)
 	_ = c.Provide(provideRouter)
+	_ = c.Provide(provideGRPCHandler)
 
-	err := c.Invoke(func(r *chi.Mux, h *handlers.OrderHandler, mem *repo.InMemory, prod ucase.Producer) error {
+	err := c.Invoke(func(r *chi.Mux, h *handlers.OrderHandler, grpch *fetchOrders.Handler, mem *repo.InMemory, prod ucase.Producer) error {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
 			defer cancel()
@@ -42,9 +49,39 @@ func main() {
 
 		r.Mount("/public/api/v1", h.Routes())
 
-		log.Println("service started on :8080")
+		eg, _ := errgroup.WithContext(ctx)
+		eg.Go(func() error {
+			log.Println("service started on :8080")
+			if err := http.ListenAndServe(":8080", r); err != nil {
+				return fmt.Errorf("failed to listen 8080: %v", err)
+			}
 
-		return http.ListenAndServe(":8080", r)
+			return nil
+		})
+
+		// -----------------
+		lis, err := net.Listen("tcp", ":50051") // Порты TCP для прослушивания
+		if err != nil {
+			log.Fatalf("failed to listen 50051: %v", err)
+		}
+
+		s := grpc.NewServer()
+		pb.RegisterOrdersServiceServer(s, grpch)
+
+		eg.Go(func() error {
+			log.Println("service started on :50051")
+			if err := s.Serve(lis); err != nil {
+				return fmt.Errorf("failed to listen 50051: %v", err)
+			}
+
+			return nil
+		})
+
+		err = eg.Wait()
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -60,7 +97,7 @@ func provideOrderHandler(svc ucase.Service, dbg seed.Service) *handlers.OrderHan
 }
 
 func provideRouter() *chi.Mux {
-	r := chi.NewRouter()
+	r := chi.NewMux()
 	r.Use(middleware.Logger)
 	return r
 }
@@ -98,4 +135,8 @@ func provideProducer() ucase.Producer {
 
 func provideService(r ucase.Repository, p ucase.Producer) ucase.Service {
 	return ucase.New(r, p)
+}
+
+func provideGRPCHandler(r ucase.Repository) *fetchOrders.Handler {
+	return fetchOrders.New(r)
 }

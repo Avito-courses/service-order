@@ -4,6 +4,7 @@ services:
     build: .
     ports:
       - "${ORDER_PORT}:${LOCALHOST}"
+      - "${GRPC_ORDER_PORT}:${GRPC_ORDER_PORT}"
     environment:
       - PORT=${LOCALHOST}
       - KAFKA_BROKERS=kafka:${KAFKA_CLIENT_PORT}
